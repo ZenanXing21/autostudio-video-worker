@@ -103,4 +103,4 @@ With Python and pytest installed, run `python scripts/build_workflows.py` and `p
 
 ### Verification status
 
-Static workflow checks and local unit tests were run. The current development host reports a 6GB GPU, so no Wan 2.2 inference, 720P MP4 generation, or 24GB OOM behavior has been tested here. Docker image build was also unavailable because the local Docker daemon denied access. Treat a full T2V/I2V GPU smoke test and S3 upload on RunPod as required deployment gates.
+Static workflow checks and local unit tests were run. The current development host reports a 6GB GPU, so no Wan 2.2 inference, 720P MP4 generation, or 24GB OOM behavior has been tested here. Docker build reached Docker Hub but failed while fetching the PyTorch base image metadata because of a registry size-validation error; the full image has not been built. Treat a full Docker build, T2V/I2V GPU smoke test, and S3 upload on RunPod as required deployment gates.

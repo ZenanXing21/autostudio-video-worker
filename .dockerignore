@@ -1,0 +1,12 @@
+.git
+.env
+__pycache__
+.pytest_cache
+*.pyc
+*.safetensors
+*.ckpt
+*.pt
+*.mp4
+models
+output
+tests
