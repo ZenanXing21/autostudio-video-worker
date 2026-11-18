@@ -44,6 +44,30 @@ The diffusion and VAE files come from [Comfy-Org/Wan_2.2_ComfyUI_Repackaged](htt
    docker push YOUR_REGISTRY/autostudio-video-worker:latest
    ```
 
+   If Docker Hub is unreachable or a configured registry mirror returns invalid
+   metadata, override only this build's base-image source. This verified mirror
+   resolves to the official PyTorch 2.6.0 image digest for Linux AMD64:
+
+   ```bash
+   docker build \
+     --build-arg BASE_IMAGE=docker.m.daocloud.io/pytorch/pytorch@sha256:77f17f843507062875ce8be2a6f76aa6aa3df7f9ef1e31d9d7432f4b0f563dee \
+     -t YOUR_REGISTRY/autostudio-video-worker:latest .
+   ```
+
+   `BASE_IMAGE` defaults to Docker Hub for normal builds. The digest pins the
+   image contents when using the mirror.
+
+   If Docker Desktop points at a stopped local proxy (for example
+   `127.0.0.1:7897`), clear the proxy build arguments for this command:
+
+   ```bash
+   docker build \
+     --build-arg BASE_IMAGE=docker.m.daocloud.io/pytorch/pytorch@sha256:77f17f843507062875ce8be2a6f76aa6aa3df7f9ef1e31d9d7432f4b0f563dee \
+     --build-arg HTTP_PROXY= --build-arg HTTPS_PROXY= \
+     --build-arg http_proxy= --build-arg https_proxy= \
+     -t YOUR_REGISTRY/autostudio-video-worker:latest .
+   ```
+
 3. Create a RunPod Serverless endpoint using that image, an RTX 3090 24GB or larger GPU, and the same Network Volume. Set the container disk large enough for ComfyUI and temporary MP4s. Set **max concurrent requests per worker to 1** and a job timeout above `JOB_TIMEOUT_SECONDS` (default 1800). Choose worker count and idle timeout based on acceptable cold starts.
 4. Add environment secrets: `S3_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and if needed `S3_ENDPOINT_URL` and `S3_REGION`. R2 uses its account endpoint and `S3_REGION=auto`; AWS S3 uses the AWS region and no custom endpoint; MinIO uses its HTTPS endpoint. The endpoint needs `PutObject`, `GetObject`, and `HeadObject` permissions. Optional `GPU_HOURLY_USD` gives an estimated compute charge.
 5. The container starts `handler.py`, verifies `nvidia-smi`, models, storage and ComfyUI API, and then calls `runpod.serverless.start`. ComfyUI binds only to loopback. No public ComfyUI port is required. Check worker logs for initialization errors before sending jobs.
@@ -103,4 +127,4 @@ With Python and pytest installed, run `python scripts/build_workflows.py` and `p
 
 ### Verification status
 
-Static workflow checks and local unit tests were run. The current development host reports a 6GB GPU, so no Wan 2.2 inference, 720P MP4 generation, or 24GB OOM behavior has been tested here. Docker build reached Docker Hub but failed while fetching the PyTorch base image metadata because of a registry size-validation error; the full image has not been built. Treat a full Docker build, T2V/I2V GPU smoke test, and S3 upload on RunPod as required deployment gates.
+Static workflow checks and local unit tests were run. A full Docker build succeeded using the pinned mirror digest and cleared proxy build arguments shown above; a CPU-only import check inside the image passed. The development host reports a 6GB GPU, so Wan 2.2 inference, 720P MP4 generation, 24GB OOM behavior, and S3 upload on RunPod have not been tested here. Treat T2V and I2V GPU smoke tests plus an S3 upload as required deployment gates.
