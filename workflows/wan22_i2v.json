@@ -1,0 +1,593 @@
+{
+  "id": "autostudio-wan22-i2v",
+  "revision": 0,
+  "last_node_id": 58,
+  "last_link_id": 13,
+  "nodes": [
+    {
+      "id": 37,
+      "type": "UNETLoader",
+      "pos": [
+        100,
+        100
+      ],
+      "size": [
+        300,
+        180
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "wan2.2_ti2v_5B_fp16.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 38,
+      "type": "CLIPLoader",
+      "pos": [
+        450,
+        100
+      ],
+      "size": [
+        300,
+        180
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            2,
+            3
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+        "wan",
+        "default"
+      ]
+    },
+    {
+      "id": 39,
+      "type": "VAELoader",
+      "pos": [
+        800,
+        100
+      ],
+      "size": [
+        300,
+        180
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            4,
+            11
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "wan2.2_vae.safetensors"
+      ]
+    },
+    {
+      "id": 48,
+      "type": "ModelSamplingSD3",
+      "pos": [
+        1150,
+        100
+      ],
+      "size": [
+        300,
+        180
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            6
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ModelSamplingSD3",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        8
+      ]
+    },
+    {
+      "id": 6,
+      "type": "CLIPTextEncode",
+      "pos": [
+        100,
+        400
+      ],
+      "size": [
+        300,
+        180
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            7
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "A futuristic AI laboratory"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "CLIPTextEncode",
+      "pos": [
+        450,
+        400
+      ],
+      "size": [
+        300,
+        180
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            8
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        ""
+      ]
+    },
+    {
+      "id": 56,
+      "type": "LoadImage",
+      "pos": [
+        800,
+        400
+      ],
+      "size": [
+        300,
+        180
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            5
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "example.png",
+        "example.png"
+      ]
+    },
+    {
+      "id": 55,
+      "type": "Wan22ImageToVideoLatent",
+      "pos": [
+        1150,
+        400
+      ],
+      "size": [
+        300,
+        180
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 4
+        },
+        {
+          "name": "start_image",
+          "type": "IMAGE",
+          "link": 5
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            9
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "Wan22ImageToVideoLatent",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        1280,
+        704,
+        121,
+        1
+      ]
+    },
+    {
+      "id": 3,
+      "type": "KSampler",
+      "pos": [
+        100,
+        700
+      ],
+      "size": [
+        300,
+        180
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 6
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 7
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 8
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 9
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            10
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "KSampler",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        12345,
+        "fixed",
+        20,
+        5,
+        "uni_pc",
+        "simple",
+        1
+      ]
+    },
+    {
+      "id": 8,
+      "type": "VAEDecode",
+      "pos": [
+        450,
+        700
+      ],
+      "size": [
+        300,
+        180
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 10
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 11
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            12
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 57,
+      "type": "CreateVideo",
+      "pos": [
+        800,
+        700
+      ],
+      "size": [
+        300,
+        180
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 12
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            13
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CreateVideo",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        24
+      ]
+    },
+    {
+      "id": 58,
+      "type": "SaveVideo",
+      "pos": [
+        1150,
+        700
+      ],
+      "size": [
+        300,
+        180
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 13
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SaveVideo",
+        "cnr_id": "comfy-core"
+      },
+      "widgets_values": [
+        "autostudio/example",
+        "mp4",
+        "auto"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      37,
+      0,
+      48,
+      0,
+      "MODEL"
+    ],
+    [
+      2,
+      38,
+      0,
+      6,
+      0,
+      "CLIP"
+    ],
+    [
+      3,
+      38,
+      0,
+      7,
+      0,
+      "CLIP"
+    ],
+    [
+      4,
+      39,
+      0,
+      55,
+      0,
+      "VAE"
+    ],
+    [
+      5,
+      56,
+      0,
+      55,
+      1,
+      "IMAGE"
+    ],
+    [
+      6,
+      48,
+      0,
+      3,
+      0,
+      "MODEL"
+    ],
+    [
+      7,
+      6,
+      0,
+      3,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      8,
+      7,
+      0,
+      3,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      9,
+      55,
+      0,
+      3,
+      3,
+      "LATENT"
+    ],
+    [
+      10,
+      3,
+      0,
+      8,
+      0,
+      "LATENT"
+    ],
+    [
+      11,
+      39,
+      0,
+      8,
+      1,
+      "VAE"
+    ],
+    [
+      12,
+      8,
+      0,
+      57,
+      0,
+      "IMAGE"
+    ],
+    [
+      13,
+      57,
+      0,
+      58,
+      0,
+      "VIDEO"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {},
+  "version": 0.4
+}
