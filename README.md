@@ -24,15 +24,17 @@ The model is [Wan 2.2 TI2V-5B](https://github.com/Wan-Video/Wan2.2), which suppo
 
 The supported first-version profile is 24 FPS, 1–5 integer seconds, and 4n+1 frames (25–121). Resolution choices are `720p` = 1280×704 (the official TI2V 720P size), `720p_portrait` = 704×1280, and an explicit smaller `480p` = 832×480 option. The smaller option is an operational fallback, not a guarantee against OOM. Unsupported values fail before GPU work. `--lowvram` and a 1GB VRAM reserve let ComfyUI offload model parts to system RAM. Use a GPU with at least 22,000 MiB reported VRAM, at least 64GB system RAM, and a fast Network Volume. RTX 3090 24GB is the target. Real speed and 720P memory headroom need testing on that GPU.
 
-These files belong in the Network Volume, **never in Git or the image**:
+These files belong under `MODEL_ROOT`, **never in Git or the image**. The default is `/runpod-volume/models`; a Pod with persistent `/workspace` storage can instead set `MODEL_ROOT=/workspace/models`:
 
-| Directory under `/runpod-volume/models` | File |
+| Directory under `MODEL_ROOT` | File |
 |---|---|
 | `diffusion_models` | `wan2.2_ti2v_5B_fp16.safetensors` |
 | `text_encoders` | `umt5_xxl_fp8_e4m3fn_scaled.safetensors` |
 | `vae` | `wan2.2_vae.safetensors` |
 
-The diffusion and VAE files come from [Comfy-Org/Wan_2.2_ComfyUI_Repackaged](https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged); the text encoder comes from [Comfy-Org/Wan_2.1_ComfyUI_repackaged](https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged). `extra_model_paths.yaml` makes ComfyUI scan the volume. Start-up checks all three files and the installed core node classes before accepting jobs.
+The diffusion and VAE files come from [Comfy-Org/Wan_2.2_ComfyUI_Repackaged](https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged); the text encoder comes from [Comfy-Org/Wan_2.1_ComfyUI_repackaged](https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged). At startup, the worker generates ComfyUI's extra model paths from `MODEL_ROOT`, so its preflight check and ComfyUI use the same directory. Start-up checks all three files and the installed core node classes before accepting jobs.
+
+For a Pod using `/workspace`, set `MODEL_ROOT=/workspace/models` and `AUTO_DOWNLOAD_MODELS=1`. On first startup, `scripts/download_models.sh` fetches missing files from Hugging Face into that directory before the worker initializes; later starts skip files already present. If you prefer to copy files yourself, leave `AUTO_DOWNLOAD_MODELS=0` and place the three files there before starting the worker. `HF_TOKEN` can be supplied as a secret when needed. `/workspace` must be backed by storage that survives the Pod lifecycle you intend to use; a newly created Pod without that storage must download the files again. Network Volume remains the recommended Serverless option.
 
 ## Deploy on RunPod Serverless
 
