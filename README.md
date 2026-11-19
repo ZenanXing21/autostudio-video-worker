@@ -1,6 +1,6 @@
 # AutoStudio Video Worker
 
-RunPod Serverless GPU Worker for local Wan 2.2 TI2V-5B inference through ComfyUI. It accepts T2V or I2V jobs, saves MP4 with ComfyUI's built-in `CreateVideo` and `SaveVideo` nodes, uploads the result to S3-compatible storage, and returns a one-hour presigned URL. No third-party video generation API is used.
+RunPod Serverless GPU Worker for local Wan 2.2 TI2V-5B inference through ComfyUI. It accepts T2V or I2V jobs and saves MP4 with ComfyUI's built-in `CreateVideo` and `SaveVideo` nodes. Without S3 settings, output is copied to `/workspace/outputs`; with S3 settings, it is uploaded and returned as a one-hour presigned URL. No third-party video generation API is used.
 
 ## Architecture
 
@@ -11,7 +11,7 @@ flowchart LR
     C --> D[ComfyUI on 127.0.0.1:8188]
     D --> E[Wan 2.2 TI2V-5B on GPU]
     E --> F[MP4 output]
-    F --> G[S3 / R2 / MinIO]
+    F --> G[Local /workspace/outputs or S3 / R2 / MinIO]
     G --> C
     C --> B
 ```
@@ -71,7 +71,7 @@ For a Pod using `/workspace`, set `MODEL_ROOT=/workspace/models` and `AUTO_DOWNL
    ```
 
 3. Create a RunPod Serverless endpoint using that image, an RTX 3090 24GB or larger GPU, and the same Network Volume. Set the container disk large enough for ComfyUI and temporary MP4s. Set **max concurrent requests per worker to 1** and a job timeout above `JOB_TIMEOUT_SECONDS` (default 1800). Choose worker count and idle timeout based on acceptable cold starts.
-4. Add environment secrets: `S3_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and if needed `S3_ENDPOINT_URL` and `S3_REGION`. R2 uses its account endpoint and `S3_REGION=auto`; AWS S3 uses the AWS region and no custom endpoint; MinIO uses its HTTPS endpoint. The endpoint needs `PutObject`, `GetObject`, and `HeadObject` permissions. Optional `GPU_HOURLY_USD` gives an estimated compute charge.
+4. Storage defaults to local files at `/workspace/outputs` when `S3_BUCKET` is empty. For accessible video URLs, set `S3_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and if needed `S3_ENDPOINT_URL` and `S3_REGION`. R2 uses its account endpoint and `S3_REGION=auto`; AWS S3 uses the AWS region and no custom endpoint; MinIO uses its HTTPS endpoint. The endpoint needs `PutObject`, `GetObject`, and `HeadObject` permissions. Optional `GPU_HOURLY_USD` gives an estimated compute charge.
 5. The container starts `handler.py`, verifies `nvidia-smi`, models, storage and ComfyUI API, and then calls `runpod.serverless.start`. ComfyUI binds only to loopback. No public ComfyUI port is required. Check worker logs for initialization errors before sending jobs.
 
 The image currently clones ComfyUI `master` at build time. For reproducible production builds, set `COMFYUI_REF` to a tested release tag when building. Keep models on the Network Volume to avoid downloading on every cold start. Keeping one warm worker reduces model initialization time but increases idle GPU cost. Do not set multiple concurrent requests on one GPU.
@@ -105,17 +105,19 @@ curl -H "Authorization: Bearer $RUNPOD_API_KEY" \
   "https://api.runpod.ai/v2/$RUNPOD_ENDPOINT_ID/status/JOB_ID"
 ```
 
-The worker `output` on success resembles:
+With S3 configured, the worker `output` on success resembles:
 
 ```json
 {"status":"completed","task_id":"JOB_ID","video_url":"https://storage.example.com/presigned-mp4","duration":5,"resolution":"720p","generation_time":342.17,"estimated_gpu_cost_usd":0.095047}
 ```
 
-`generation_time` measures wall-clock time from the start of handler execution through upload. `estimated_gpu_cost_usd` is `generation_time / 3600 × GPU_HOURLY_USD`, not a RunPod bill. A retry with the same RunPod job ID checks S3 first and returns the existing video with `cached=true`; a presigned URL expires after one hour and can be refreshed by retrying that ID. Configure the RunPod job retention and your S3 lifecycle policy separately.
+Without S3 configured, the result contains `"video_url": null` and `"output_path": "/workspace/outputs/JOB_ID.mp4"`. That path is inside the Pod or its mounted filesystem; the RunPod HTTP response does not expose the MP4 bytes. Set `LOCAL_OUTPUT_DIR` only if you need a different persistent directory. On Serverless, use S3 if the caller needs a downloadable URL or if local worker storage will not persist.
+
+`generation_time` measures wall-clock time from the start of handler execution through storage. `estimated_gpu_cost_usd` is `generation_time / 3600 × GPU_HOURLY_USD`, not a RunPod bill. A retry with the same RunPod job ID checks the selected storage first and returns the existing video with `cached=true`. S3 presigned URLs expire after one hour and can be refreshed by retrying that ID. Configure RunPod job retention and any S3 lifecycle policy separately.
 
 ## Local verification and troubleshooting
 
-With Python and pytest installed, run `python scripts/build_workflows.py` and `python -m pytest -q`. Import `workflows/wan22_t2v.json` or `workflows/wan22_i2v.json` into a recent ComfyUI to inspect the UI graphs. For a real worker test, attach a 24GB GPU and the model volume, set S3 credentials, run `python scripts/test_gpu.py`, then `python handler.py`. A full I2V test requires a reachable public HTTPS image or base64 `image_file`.
+With Python and pytest installed, run `python scripts/build_workflows.py` and `python -m pytest -q`. Import `workflows/wan22_t2v.json` or `workflows/wan22_i2v.json` into a recent ComfyUI to inspect the UI graphs. For a real worker test, attach a 24GB GPU and the model volume, run `python scripts/test_gpu.py`, then `python handler.py`. S3 credentials are optional for local output. A full I2V test requires a reachable public HTTPS image or base64 `image_file`.
 
 | Symptom | Check |
 |---|---|
@@ -124,7 +126,8 @@ With Python and pytest installed, run `python scripts/build_workflows.py` and `p
 | Out of memory | Retry `resolution=480p` or shorter `duration`; keep concurrency at one and allow CPU offloading. |
 | ComfyUI timeout | Increase both `JOB_TIMEOUT_SECONDS` and RunPod endpoint timeout; inspect logs for stalled download or OOM. |
 | Image download failure | Use public HTTPS, allow DNS egress, and keep input below 20 MiB. |
-| Upload failure | Check bucket permissions, endpoint, credentials, and object storage reachability. A job is not marked complete until upload succeeds. |
+| Upload failure | With S3 enabled, check bucket permissions, endpoint, credentials, and reachability. A job is not marked complete until upload succeeds. |
+| Local output missing | Check that `/workspace/outputs` is writable and persisted for the Pod lifecycle; inspect `output_path` in the job result. |
 | Cold start is slow | Keep models on the Network Volume; use a warm worker if latency matters. |
 
 ### Verification status

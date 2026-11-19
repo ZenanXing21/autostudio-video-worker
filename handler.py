@@ -9,7 +9,7 @@ import runpod
 from app.comfyui_manager import ComfyUI
 from app.config import Settings
 from app.gpu_manager import GPU_LOCK, check_gpu
-from app.storage import ObjectStorage
+from app.storage import storage_from_settings
 from app.validators import InputError, parse_request
 from app.workflow_engine import build_prompt, validate_graph
 
@@ -25,7 +25,7 @@ def initialize() -> None:
     global storage
     log.info("GPU: %s", check_gpu())
     comfy.ensure_models()
-    storage = ObjectStorage(settings)
+    storage = storage_from_settings(settings)
     comfy.start()
     for mode in ("t2v", "i2v"):
         from pathlib import Path
@@ -46,7 +46,7 @@ def handler(job: dict) -> dict:
             return {"status": "failed", "task_id": task_id, "error": "GPU worker is busy; retry job"}
         try:
             if storage.existing(task_id):
-                return {"status": "completed", "task_id": task_id, "video_url": storage.url(task_id),
+                return {"status": "completed", "task_id": task_id, **storage.reference(task_id),
                         "duration": request.duration, "resolution": request.resolution,
                         "generation_time": 0, "cached": True, "estimated_gpu_cost_usd": 0}
             if not comfy.ready():
@@ -58,9 +58,9 @@ def handler(job: dict) -> dict:
             graph = build_prompt(request, image_name, task_id)
             validate_graph(graph, comfy.nodes())
             path = comfy.execute(graph, task_id, settings.job_timeout)
-            url = storage.upload(path, task_id)
+            location = storage.store(path, task_id)
             elapsed = round(time.monotonic() - started, 2)
-            return {"status": "completed", "task_id": task_id, "video_url": url,
+            return {"status": "completed", "task_id": task_id, **location,
                     "duration": request.duration, "resolution": request.resolution,
                     "generation_time": elapsed,
                     "estimated_gpu_cost_usd": round(elapsed / 3600 * settings.gpu_hourly_usd, 6)}

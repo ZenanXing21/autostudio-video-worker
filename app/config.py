@@ -9,6 +9,7 @@ class Settings:
     model_root: Path = Path(os.getenv("MODEL_ROOT", "/runpod-volume/models"))
     comfy_url: str = os.getenv("COMFY_URL", "http://127.0.0.1:8188")
     work_dir: Path = Path(os.getenv("WORK_DIR", "/tmp/autostudio"))
+    local_output_dir: Path = Path(os.getenv("LOCAL_OUTPUT_DIR", "/workspace/outputs"))
     job_timeout: int = int(os.getenv("JOB_TIMEOUT_SECONDS", "1800"))
     s3_bucket: str = os.getenv("S3_BUCKET", "")
     s3_endpoint: str | None = os.getenv("S3_ENDPOINT_URL") or None
