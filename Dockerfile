@@ -8,8 +8,11 @@ RUN for source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; 
         fi; \
     done && \
     apt-get -o Acquire::Retries=5 update && \
-    apt-get -o Acquire::Retries=5 install -y --no-install-recommends git ffmpeg libgl1 libglib2.0-0 && \
+    apt-get -o Acquire::Retries=5 install -y --no-install-recommends git ffmpeg libgl1 libglib2.0-0 python3-venv && \
     rm -rf /var/lib/apt/lists/*
+RUN python -m venv --system-site-packages /opt/venv && \
+    /opt/venv/bin/python -c "import torch; print('base torch', torch.__version__)"
+ENV PATH="/opt/venv/bin:${PATH}"
 ARG COMFYUI_REF=master
 RUN git clone --depth 1 --branch "$COMFYUI_REF" https://github.com/Comfy-Org/ComfyUI.git /opt/ComfyUI
 RUN pip install --no-cache-dir -r /opt/ComfyUI/requirements.txt
