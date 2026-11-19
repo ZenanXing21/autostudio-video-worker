@@ -126,6 +126,7 @@ With Python and pytest installed, run `python scripts/build_workflows.py` and `p
 | Symptom | Check |
 |---|---|
 | Missing model file | Verify mount path and exact names from the table. Run `scripts/download_models.sh` on the mounted volume. |
+| GPU memory shows `[Insufficient Permissions]` | Some MIG devices restrict `nvidia-smi` memory queries. The worker logs a warning and continues with `memory_mib=null`; confirm the actual available memory in the Pod before inference. |
 | Missing ComfyUI node | Update ComfyUI to a version containing the official 5B template nodes; check `/object_info` in worker logs. |
 | Out of memory | Retry `resolution=480p` or shorter `duration`; keep concurrency at one and allow CPU offloading. |
 | ComfyUI timeout | Increase both `JOB_TIMEOUT_SECONDS` and RunPod endpoint timeout; inspect logs for stalled download or OOM. |

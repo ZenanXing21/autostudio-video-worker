@@ -19,6 +19,9 @@ keep_alive_on_error() {
 if [[ "${KEEP_ALIVE_ON_STARTUP_ERROR:-0}" == "1" ]]; then
     trap keep_alive_on_error ERR
 fi
+comfy_log="${COMFY_LOG_PATH:-/workspace/logs/comfyui.log}"
+mkdir -p "$(dirname "$comfy_log")"
+: >> "$comfy_log"
 if [[ "${AUTO_DOWNLOAD_MODELS:-0}" == "1" ]]; then
     bash "$script_root/scripts/download_models.sh"
 fi
