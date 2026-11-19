@@ -76,6 +76,10 @@ For a Pod using `/workspace`, set `MODEL_ROOT=/workspace/models` and `AUTO_DOWNL
 
 The image currently clones ComfyUI `master` at build time. For reproducible production builds, set `COMFYUI_REF` to a tested release tag when building. Keep models on the Network Volume to avoid downloading on every cold start. Keeping one warm worker reduces model initialization time but increases idle GPU cost. Do not set multiple concurrent requests on one GPU.
 
+### Debugging Pod startup
+
+ComfyUI starts through `/app/scripts/start_comfyui.sh`, which runs `python main.py` from `/opt/ComfyUI` and binds only to `127.0.0.1:8188`. The script creates the log directory and appends stdout, stderr, `MODEL_ROOT`, `AUTO_DOWNLOAD_MODELS`, and the ComfyUI command to `/workspace/logs/comfyui.log` (override with `COMFY_LOG_PATH`). It does not print credentials. Set `KEEP_ALIVE_ON_STARTUP_ERROR=1` while diagnosing a Pod: if model download, worker initialization, or ComfyUI startup fails, the startup script prints the exit code and the last 80 ComfyUI log lines, then keeps the container running for `exec`. Inspect the full log with `tail -n 200 /workspace/logs/comfyui.log` and check model files under `MODEL_ROOT`. A kept-alive worker is not serving jobs; set the switch back to `0` after fixing the startup error.
+
 ## RunPod API
 
 Set `RUNPOD_ENDPOINT_ID` and `RUNPOD_API_KEY` locally. RunPod's `/run` endpoint returns a RunPod job ID; poll `/status/{id}` until `status=COMPLETED`, then read the worker result in `output`. Use `/runsync` only when your client and endpoint timeouts can cover inference.

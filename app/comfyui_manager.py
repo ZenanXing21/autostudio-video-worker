@@ -34,16 +34,21 @@ class ComfyUI:
 
     def start(self) -> None:
         if not self.ready():
-            self.process = subprocess.Popen(["bash", "/app/scripts/start_comfyui.sh"],
-                                            stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+            log_path = self.settings.comfy_log_path
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+            with log_path.open("a", encoding="utf-8") as log_file:
+                log_file.write(f"\n=== ComfyUI start {time.strftime('%Y-%m-%d %H:%M:%S %Z')} ===\n")
+                log_file.flush()
+                self.process = subprocess.Popen(["bash", "/app/scripts/start_comfyui.sh"],
+                                                stdout=log_file, stderr=subprocess.STDOUT)
         deadline = time.monotonic() + 180
         while time.monotonic() < deadline:
             if self.ready():
                 return
             if self.process and self.process.poll() is not None:
-                raise ComfyError(f"ComfyUI exited with code {self.process.returncode}")
+                raise ComfyError(f"ComfyUI exited with code {self.process.returncode}; see {self.settings.comfy_log_path}")
             time.sleep(2)
-        raise ComfyError("ComfyUI API did not become ready in 180 seconds")
+        raise ComfyError(f"ComfyUI API did not become ready in 180 seconds; see {self.settings.comfy_log_path}")
 
     def nodes(self) -> set[str]:
         response = self.session.get(f"{self.settings.comfy_url}/object_info", timeout=30)

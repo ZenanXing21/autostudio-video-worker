@@ -8,6 +8,7 @@ class Settings:
     comfy_root: Path = Path(os.getenv("COMFY_ROOT", "/opt/ComfyUI"))
     model_root: Path = Path(os.getenv("MODEL_ROOT", "/runpod-volume/models"))
     comfy_url: str = os.getenv("COMFY_URL", "http://127.0.0.1:8188")
+    comfy_log_path: Path = Path(os.getenv("COMFY_LOG_PATH", "/workspace/logs/comfyui.log"))
     work_dir: Path = Path(os.getenv("WORK_DIR", "/tmp/autostudio"))
     local_output_dir: Path = Path(os.getenv("LOCAL_OUTPUT_DIR", "/workspace/outputs"))
     job_timeout: int = int(os.getenv("JOB_TIMEOUT_SECONDS", "1800"))
