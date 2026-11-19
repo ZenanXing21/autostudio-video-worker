@@ -46,29 +46,7 @@ For a Pod using `/workspace`, set `MODEL_ROOT=/workspace/models` and `AUTO_DOWNL
    docker push YOUR_REGISTRY/autostudio-video-worker:latest
    ```
 
-   If Docker Hub is unreachable or a configured registry mirror returns invalid
-   metadata, override only this build's base-image source. This verified mirror
-   resolves to the official PyTorch 2.6.0 image digest for Linux AMD64:
-
-   ```bash
-   docker build \
-     --build-arg BASE_IMAGE=docker.m.daocloud.io/pytorch/pytorch@sha256:77f17f843507062875ce8be2a6f76aa6aa3df7f9ef1e31d9d7432f4b0f563dee \
-     -t YOUR_REGISTRY/autostudio-video-worker:latest .
-   ```
-
-   `BASE_IMAGE` defaults to Docker Hub for normal builds. The digest pins the
-   image contents when using the mirror.
-
-   If Docker Desktop points at a stopped local proxy (for example
-   `127.0.0.1:7897`), clear the proxy build arguments for this command:
-
-   ```bash
-   docker build \
-     --build-arg BASE_IMAGE=docker.m.daocloud.io/pytorch/pytorch@sha256:77f17f843507062875ce8be2a6f76aa6aa3df7f9ef1e31d9d7432f4b0f563dee \
-     --build-arg HTTP_PROXY= --build-arg HTTPS_PROXY= \
-     --build-arg http_proxy= --build-arg https_proxy= \
-     -t YOUR_REGISTRY/autostudio-video-worker:latest .
-   ```
+   The default base is the official PyTorch 2.10.0 CUDA 12.8 runtime image from GHCR, pinned by digest. Current ComfyUI imports `comfy-kitchen`, whose custom operators need PyTorch 2.7 or newer. Removing `comfy-kitchen` from this ComfyUI version also breaks startup. The Docker build checks that `comfy-kitchen` imports and that ComfyUI's CPU-mode HTTP API becomes ready; it does not replace a GPU test on the target Pod.
 
 3. Create a RunPod Serverless endpoint using that image, an RTX 3090 24GB or larger GPU, and the same Network Volume. Set the container disk large enough for ComfyUI and temporary MP4s. Set **max concurrent requests per worker to 1** and a job timeout above `JOB_TIMEOUT_SECONDS` (default 1800). Choose worker count and idle timeout based on acceptable cold starts.
 4. Storage defaults to local files at `/workspace/outputs` when `S3_BUCKET` is empty. For accessible video URLs, set `S3_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and if needed `S3_ENDPOINT_URL` and `S3_REGION`. R2 uses its account endpoint and `S3_REGION=auto`; AWS S3 uses the AWS region and no custom endpoint; MinIO uses its HTTPS endpoint. The endpoint needs `PutObject`, `GetObject`, and `HeadObject` permissions. Optional `GPU_HOURLY_USD` gives an estimated compute charge.
@@ -137,4 +115,4 @@ With Python and pytest installed, run `python scripts/build_workflows.py` and `p
 
 ### Verification status
 
-Static workflow checks and local unit tests were run. A full Docker build succeeded using the pinned mirror digest and cleared proxy build arguments shown above; a CPU-only import check inside the image passed. The development host reports a 6GB GPU, so Wan 2.2 inference, 720P MP4 generation, 24GB OOM behavior, and S3 upload on RunPod have not been tested here. Treat T2V and I2V GPU smoke tests plus an S3 upload as required deployment gates.
+Static workflow checks and local unit tests were run. The Docker build checks `comfy-kitchen` import compatibility and ComfyUI CPU-mode API readiness before publishing. The development host reports a 6GB GPU, so Wan 2.2 inference, 720P MP4 generation, 24GB OOM behavior, and S3 upload on RunPod have not been tested here. Treat T2V and I2V GPU smoke tests plus an S3 upload as required deployment gates.
